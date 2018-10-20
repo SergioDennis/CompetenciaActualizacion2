@@ -1,0 +1,71 @@
+<?php
+
+namespace sisLaravel\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+use sisLaravel\Http\Requests;
+use sisLaravel\Categoria; //hacemos referencia al modelo Categoria
+use Illuminate\Support\Facades\Redirect;
+use sisLaravel\Http\Requests\CategoriaFormRequest;
+use DB;
+
+class CategoriaController extends Controller
+{
+    //metodos para redireccionar a una vista o interactuan con el modelo para enviar o consultar informacion 
+    public function __construct()
+    {
+
+    }
+    public function index(Request $request)//creacmos un objeto de tipo request qque se encuentra en app/http/controllers/requests/request.php
+    {
+        if($request)//si existe existe el requiest entonces voy a obtener todos los registros de la tabla categoria
+        {
+            $query=trim($request->get('searchText'));//segun al searchText(es el objeto) se va a hacer la busqueda 
+            $categorias=DB::table('CATEGORIA')->where('nombrecate','LIKE','%'.$query.'%')
+            ->where ('condicion','=','1')//solo muestra categorias activas
+            ->orderBy('idcategoria','desc')
+            ->paginate(7);//de cuantos numero de registros de haga la paginacion
+            return view('almacen.categoria.index',["categorias"=>$categorias,"searchText"=>$query]);
+        }
+
+
+    }
+    public function create()
+    {
+        return view("almacen.categoria.create");//
+    }
+    public function store(CategoriaFormRequest $request)//store hace almacena el objeto del modelo categoria en la tabla orrecpondiente el la bd
+    {
+        $categoria = new Categoria;//creamos un objeto de tipo categoria que esta el app/Categoria.php segun sus propiedades
+        $categoria->nombrecate=$request->get('nombrecate');//el ultimo 'nombrecate' es el que esta validado en CategoriaFormRequest
+        $categoria->descripcioncate=$request->get('descripcioncate');
+        $categoria->condicion='1';//cuando registremos una categoria va a estar activa por eso es 1, cuando eliminemos sera 0
+        $categoria->save();//para guardar en la base de datos
+        return Redirect::to('almacen/categoria');//despues de guardar nos envie a la vista de las categorias
+    }
+    public function show($id)
+    {
+        return view("almacen.categoria.show",["categoria"=>Categoria::findOrFail($id)]);
+    }
+    public function edit($id)
+    {
+        return view("almacen.categoria.edit",["categoria"=>Categoria::findOrFail($id)]);
+    }
+    public function update(CategoriaFormRequest $request,$id)
+    {
+       $categoria=Categoria::findOrFail($id);
+       $categoria->nombrecate=$request->get('nombrecate');
+       $categoria->descripcioncate=$request->get('descripcioncate');
+       $categoria->update();
+       return Redirect::to('almacen/categoria');
+    }
+    public function destroy($id)
+    {
+        $categoria=Categoria::findOrFail($id);
+        $categoria->condicion='0';
+        $categoria->update();
+        return Redirect::to('almacen/categoria');
+    }
+}
+
